@@ -6,12 +6,12 @@
 
 const int TestCOUNT = 10;
 
-void runAdditionTests() {
-    std::cout << "***********************Running Addition Tests***********************" << std::endl;
+void randomTest(const std::string& operation, int min= -10000, int max = 10000) {
+    std::cout << "***********************Running " << operation << " Tests***********************" << std::endl;
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
+    std::uniform_int_distribution<int> dist(min, max);
 
     for (int i = 0; i < TestCOUNT; ++i) {
         int num1 = dist(gen);
@@ -19,15 +19,33 @@ void runAdditionTests() {
 
         BigInteger a(std::to_string(num1));
         BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 + num2));
+        BigInteger expected;
+        BigInteger result;
 
-        BigInteger result = a + b;
-        std::cout << "Test " << (num1 ) << " + " << num2 
-                  << " " << result << " == " << (num1+num2) << std::endl;
+        if (operation == "+") {
+            expected = BigInteger(std::to_string(num1 + num2));
+            result = a + b;
+        } else if (operation == "-") {
+            expected = BigInteger(std::to_string(num1 - num2));
+            result = a - b;
+        } else if (operation == "*") {
+            expected = BigInteger(std::to_string(num1 * num2));
+            result = a * b;
+        } else if (operation == "/") {
+            // expected = BigInteger(std::to_string(num1 / num2));
+            // result = a / b;
+        }
+
+        std::cout << "Test " << num1 << " " << operation << " " << num2
+                  << " " << result << " == " << expected << std::endl;
         assert(result == expected);
 
         std::cout << "Test " << (i + 1) << " passed" << std::endl;
     }
+}
+
+void runAdditionTests() {
+    randomTest("+");
 
     BigInteger num1, num2;
     num1 = "964793941351798875130890128898086485681241334814868066116469822595";
@@ -78,27 +96,7 @@ void runAdditionTests() {
 }
 
 void runSubtractionTests() {
-    std::cout << "***********************Running Subtraction Tests***********************" << std::endl;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
-
-    for (int i = 0; i < TestCOUNT; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
-
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 - num2));
-
-        BigInteger result = a - b;
-        std::cout << "Test " << (num1 ) << " - " << num2 
-                  << " " << result << " == " << (num1-num2) << std::endl;
-        assert(result == expected);
-
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    randomTest("-");
 
     BigInteger num1, num2;
 
@@ -148,28 +146,7 @@ void runSubtractionTests() {
 
 
 void runMultiplicationTests() {
-    std::cout << "***********************Running Multiplication Tests***********************" << std::endl;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-1000, 1000);
-
-    for (int i = 0; i < TestCOUNT; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
-
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 * num2));
-
-        BigInteger result = a * b;
-
-        std::cout << "Test " << (num1 ) << " * " << num2 
-                  << " " << result << " == " << (num1*num2) << std::endl;
-        assert(result == expected);
-
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    randomTest("*");
 
     BigInteger num1, num2;
 
@@ -262,6 +239,7 @@ void runDivisionTests() {
 }
 
 */
+
 
 int main() {
     runAdditionTests();
