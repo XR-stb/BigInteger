@@ -51,7 +51,7 @@ public:
         return *this;
     }
 
-    BigInteger& operator=(BigInteger &other) {
+    BigInteger& operator=(const BigInteger &other) {
         this->isNegative = other.isNegative;
         this->value = other.value;
         return *this;
