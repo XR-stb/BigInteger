@@ -1,0 +1,463 @@
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <cassert>
+#include <random>
+
+using namespace std;
+
+class BigInteger {
+private:
+    string value;
+    bool isNegative;
+
+public:
+    BigInteger() : value("0"), isNegative(false) {}
+
+    BigInteger(bool isNeg, string &&val) : value(val), isNegative(isNeg) {}
+    BigInteger(string &&val, bool isNeg) : value(val), isNegative(isNeg) {}
+
+    BigInteger(const BigInteger &other) : value(other.value), isNegative(other.isNegative) {}
+    BigInteger(BigInteger &other) : value(other.value), isNegative(other.isNegative) {}
+
+    BigInteger(bool isNeg, BigInteger other) : value(other.value), isNegative(isNeg) {}
+    BigInteger(BigInteger other, bool isNeg) : value(other.value), isNegative(isNeg) {}
+
+    BigInteger(const std::string str) : value(str), isNegative(false) {
+        // TODO:合法值检验
+        // eg:空字符串，不合法字符等
+        if (value[0] == '-') {
+            value = value.substr(1);
+            isNegative = true;
+        }
+    }
+
+    std::string getValue() const{
+        return string(isNegative ? "-" : "") + value;
+    }
+
+    BigInteger& operator=(const std::string& str) {
+        BigInteger result(str);
+        return result;
+    }
+
+    BigInteger& operator=(const char * str) {
+        std::string tmpString = std::string(str);
+        BigInteger result(tmpString);
+        result.swap(*this);
+        return *this;
+    }
+
+    BigInteger& operator=(BigInteger &other) {
+        this->isNegative = other.isNegative;
+        this->value = other.value;
+        return *this;
+    }
+
+    bool operator==(const BigInteger& other) const {
+        return value == other.value && isNegative == other.isNegative;
+    }
+
+    bool operator==(const std::string& str) const {
+        return (isNegative ? "-" : "") + value == str;
+    }
+
+    bool operator==(const char * str) const {
+        return (isNegative ? "-" : "") + value == std::string(str);
+    }
+
+    bool operator!=(const BigInteger& other) const {
+        return !(*this == other);
+    }
+
+    bool operator<(const BigInteger& other) const {
+        if (isNegative != other.isNegative) {
+            return isNegative;
+        }
+
+        bool isSmaller = false;
+
+        if (value.length() < other.value.length()) {
+            isSmaller = true;
+        } else if (value.length() == other.value.length()) {
+            isSmaller = value < other.value;// 小心字符串比较
+        }
+
+        return isNegative ? !isSmaller : isSmaller;
+    }
+
+    bool operator>(const BigInteger& other) const {
+        return other < *this;
+    }
+
+    bool operator<=(const BigInteger& other) const {
+        return *this < other || *this == other;
+    }
+
+    bool operator>=(const BigInteger& other) const {
+        return *this > other || *this == other;
+    }
+
+    void swap(BigInteger& other) {
+        std::swap(value, other.value);
+        std::swap(isNegative, other.isNegative);
+    }
+
+    //正数+正数正常写
+    //正数-正数正常写
+
+    //负数+正数或者正数+负数可以改为正数-正数
+
+    //负数-正数可以改为0-(正数+正数)
+    
+    //负数-负数 == -（正数+正数）
+    //正数-负数 == 正数+正数
+    BigInteger operator+(const BigInteger& other) const {
+        //负数+正数 == 正数-负数
+        if (isNegative && !other.isNegative) {
+            BigInteger neg = *this;
+            neg.isNegative = false;
+            return other - neg;
+        }
+        // 正数+负数 == 正数-正数
+        if (!isNegative && other.isNegative) {
+            BigInteger neg = other;
+            neg.isNegative = false;
+            return *this - neg;
+        }
+        //负数+负数 == -（正数+正数）
+        if (isNegative && other.isNegative) {
+            BigInteger a = *this, b = other;
+            a.isNegative = false;
+            b.isNegative = false;
+            return -(a + b);
+        }
+
+        //到这里就是两个正数了
+        std::string result;
+        int carry = 0;
+        int i = value.size() - 1;
+        int j = other.value.size() - 1;
+
+        while (i >= 0 || j >= 0 || carry > 0) {
+            int digit1 = (i >= 0) ? (value[i] - '0') : 0;
+            int digit2 = (j >= 0) ? (other.value[j] - '0') : 0;
+            int sum = digit1 + digit2 + carry;
+
+            carry = sum / 10;
+            int digit = sum % 10;
+            result.push_back(digit + '0');
+
+            --i;
+            --j;
+        }
+
+        std::reverse(result.begin(), result.end());
+
+        BigInteger resultNum(result);
+        if (isNegative && other.isNegative) {
+            resultNum.isNegative = true;
+        }
+
+        return resultNum;
+    }
+
+    BigInteger operator-() const {
+        BigInteger result = *this;
+        result.isNegative = !result.isNegative;
+        return result;
+    }
+
+    BigInteger operator-(const BigInteger& other) const {
+        //负数 - 正数 == -(正数+正数)
+        if (isNegative && !other.isNegative) {
+            BigInteger neg = *this;
+            neg.isNegative = false;
+            return -(neg + other);
+        }
+        //正数 - 负数 == 正数+正数
+        if (!isNegative && other.isNegative) {
+            BigInteger neg = other;
+            neg.isNegative = false;
+            return *this + neg;
+        }
+        //负数 - 负数 == 负数+正数
+        if (isNegative && other.isNegative) {
+            BigInteger neg = other;
+            neg.isNegative = false;
+            return *this + neg;
+        }
+
+        //到这里说明全是正数了，让大数在前
+        bool isNeg = false;
+        BigInteger a = *this, b = other;
+        if(a < b){
+            isNeg = true;//大数跑前面去了，所以要取反
+            a.swap(b);
+        }
+
+        std::string result;
+        int borrow = 0;
+        int i = a.value.length() - 1;
+        int j = b.value.length() - 1;
+
+        while (i >= 0 || j >= 0) {
+            int diff = borrow;
+            if (i >= 0) {
+                diff += a.value[i] - '0';
+                i--;
+            }
+            if (j >= 0) {
+                diff -= b.value[j] - '0';
+                j--;
+            }
+
+            if (diff < 0) {
+                diff += 10;
+                borrow = -1;
+            } else {
+                borrow = 0;
+            }
+
+            result.push_back(diff + '0');
+        }
+        
+        // 去除结果中的前导零,这里的值还是逆序的
+        // 单独的值0 不用去
+        while (result.length() > 1 && result.back() == '0') {
+            result.pop_back();
+        }
+        std::reverse(result.begin(), result.end());
+        
+        return BigInteger(isNeg, result);
+    }
+
+
+
+
+    friend std::ostream& operator<<(std::ostream& os, const BigInteger& obj) {
+        if (obj.isNegative) {
+            os << '-';
+        }
+        os << obj.value;
+        return os;
+    }
+
+};
+
+
+const int TestCOUNT = 1000;
+
+
+void runAdditionTests() {
+    std::cout << "***********************Running Addition Tests***********************" << std::endl;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(-10000, 10000);
+
+    for (int i = 0; i < TestCOUNT; ++i) {
+        int num1 = dist(gen);
+        int num2 = dist(gen);
+
+        BigInteger a(std::to_string(num1));
+        BigInteger b(std::to_string(num2));
+        BigInteger expected(std::to_string(num1 + num2));
+
+        BigInteger result = a + b;
+        std::cout << "Test " << (num1 ) << " + " << num2 
+                  << " " << result << " == " << (num1+num2) << std::endl;
+        assert(result == expected);
+
+        std::cout << "Test " << (i + 1) << " passed" << std::endl;
+    }
+
+    BigInteger num1, num2;
+    num1 = "964793941351798875130890128898086485681241334814868066116469822595";
+    num2 = "542060529704217132357214772959828385120983424339263541090375634996";
+    assert(num1 + num2 == "1506854471056016007488104901857914870802224759154131607206845457591");
+
+    num1 = "-11407631912626230252367469223167656290390890475827609315553696289483";
+    num2 = "-622358735778";
+    assert(num1 + num2 == "-11407631912626230252367469223167656290390890475827609316176055025261");
+
+    num1 = "-1451727640372150342694657990205152075821407831153281802";
+    num2 = "-20726915010027835065";
+    assert(num1 + num2 == "-1451727640372150342694657990205152096548322841181116867");
+
+    num1 = "378105201894439826001386678007";
+    num2 = "46408267178";
+    assert(num1 + num2 == "378105201894439826047794945185");
+
+    num1 = "-401352663034326201321730";
+    num2 = "906092740496950206492169757841878889190256238852327468200435470298517938447068207122565641389436";
+    assert(num1 + num2 == "906092740496950206492169757841878889190256238852327468200435470298517938045715544088239440067706");
+
+    num1 = "6280938082901588107969672670114844942864465723767937359114430528151000202";
+    num2 = "-169737372801639219359121260";
+    assert(num1 + num2 == "6280938082901588107969672670114844942864465723598199986312791308791878942");
+
+    num1 = "4891993881875355817054354217645127142317488740323";
+    num2 = "78172579890945836844989520331474240546484714755034487986357748";
+    assert(num1 + num2 == "78172579890950728838871395687291294900702359882176805475098071");
+
+    num1 = "39332";
+    num2 = "730286864164573765164462259628494101475536081003775088852448656483617445622702226058959588304602717";
+    assert(num1 + num2 == "730286864164573765164462259628494101475536081003775088852448656483617445622702226058959588304642049");
+
+    num1 = "9281779";
+    num2 = "7861247922119448629890175529175201413181683174369126395290950494";
+    assert(num1 + num2 == "7861247922119448629890175529175201413181683174369126395300232273");
+
+    num1 = "-4081508731122637188726229073162319284277332977975461002284920767";
+    num2 = "04";
+    assert(num1 + num2 == "-4081508731122637188726229073162319284277332977975461002284920763");
+
+    num1 = "-976748496616784459049811566313746991893353615270030752";
+    num2 = "-399679388240147850845582962266568406378550013568919477066893025039289680561857555668529767384";
+    assert(num1 + num2 == "-399679388240147850845582962266568406379526762065536261525942836605603427553750909283799798136");
+
+    std::cout << "***********************Test Addition Successful!***********************" << std::endl;
+}
+
+void runSubtractionTests() {
+    std::cout << "***********************Running Subtraction Tests***********************" << std::endl;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(-10000, 10000);
+
+    for (int i = 0; i < TestCOUNT; ++i) {
+        int num1 = dist(gen);
+        int num2 = dist(gen);
+
+        BigInteger a(std::to_string(num1));
+        BigInteger b(std::to_string(num2));
+        BigInteger expected(std::to_string(num1 - num2));
+
+        BigInteger result = a - b;
+        std::cout << "Test " << (num1 ) << " - " << num2 
+                  << " " << result << " == " << (num1-num2) << std::endl;
+        assert(result == expected);
+
+        std::cout << "Test " << (i + 1) << " passed" << std::endl;
+    }
+
+    BigInteger num1, num2;
+
+    num1 = "-874445435842639838877693744091";
+    num2 = "5138076149581085788513466024062932782543840542790049273152971609173775463977827312928469158";
+    assert(num1 - num2 == "-5138076149581085788513466024062932782543840542790049273152972483619211306617666190622213249");
+
+    num1 = "95107282417738793026415";
+    num2 = "-551943879271254850848339988828957171877079443312791787898379298668051621195056762280837302274165652";
+    assert(num1 - num2 == "551943879271254850848339988828957171877079443312791787898379298668051621195151869563255041067192067");
+
+    num1 = "-18053639289474007213946034769270700006";
+    num2 = "90301";
+    assert(num1 - num2 == "-18053639289474007213946034769270790307");
+
+    num1 = "-914888188594569201372815243932724814565686868629006852684208690321806429023522259063956061046848109";
+    num2 = "-3383521451328587219733622448444374516871359709823475933160";
+    assert(num1 - num2 == "-914888188594569201372815243932724814565683485107555524096988956699357984649005387704246237570914949");
+
+    num1 = "-42609821895384021940801857867165684333030100418";
+    num2 = "-404684079137531034032947833286888441832";
+    assert(num1 - num2 == "-42609821490699942803270823834217851046141658586");
+
+    num1 = "-74734087249527717679669988232963";
+    num2 = "703200302772919215100142709534800513421235492";
+    assert(num1 - num2 == "-703200302772993949187392237252480183409468455");
+
+    num1 = "31960914815173225005825990289225841362813372427221";
+    num2 = "-35787783495697426203735035198071182";
+    assert(num1 - num2 == "31960914815173260793609485986652045097848570498403");
+
+    num1 = "-9239576966760532705989515966946785580507742051130201336277257576761702";
+    num2 = "1730689";
+    assert(num1 - num2 == "-9239576966760532705989515966946785580507742051130201336277257578492391");
+
+    num1 = "-70492912131149135406529794980741969445";
+    num2 = "-82593732358753368234964";
+    assert(num1 - num2 == "-70492912131149052812797436227373734481");
+
+    num1 = "-363899055377972592318728868698204746174122392672797079322650154129027636943";
+    num2 = "820316728203887494464493549398804948818046";
+    assert(num1 - num2 == "-363899055377972592318728868698205566490850596560291543816199552933976454989");
+
+
+    std::cout << "***********************Test Subtraction Successful!***********************" << std::endl;
+}
+
+/*
+void runMultiplicationTests() {
+    std::cout << "Running Multiplication Tests" << std::endl;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(-1000, 1000);
+
+    for (int i = 0; i < 20; ++i) {
+        int num1 = dist(gen);
+        int num2 = dist(gen);
+
+        BigInteger a(std::to_string(num1));
+        BigInteger b(std::to_string(num2));
+        BigInteger expected(std::to_string(num1 * num2));
+
+        BigInteger result = a * b;
+
+        assert(result == expected);
+
+        std::cout << "Test " << (i + 1) << " passed" << std::endl;
+    }
+
+    std::cout << "Multiplication Tests Completed" << std::endl;
+}
+
+void runDivisionTests() {
+    std::cout << "Running Division Tests" << std::endl;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(-10000, 10000);
+
+    for (int i = 0; i < 20; ++i) {
+        int num1 = dist(gen);
+        int num2 = dist(gen);
+
+        // Ensure num2 is not zero
+        while (num2 == 0) {
+            num2 = dist(gen);
+        }
+
+        BigInteger a(std::to_string(num1));
+        BigInteger b(std::to_string(num2));
+        BigInteger expected(std::to_string(num1 / num2));
+
+        BigInteger result = a / b;
+
+        assert(result == expected);
+
+        std::cout << "Test " << (i + 1) << " passed" << std::endl;
+    }
+
+    std::cout << "Division Tests Completed" << std::endl;
+}
+
+*/
+
+int main() {
+    runAdditionTests();
+
+    runSubtractionTests();
+
+    // runMultiplicationTests();
+    // std::cout << "Test Multiplication Successful!" << std::endl;
+
+    // runDivisionTests();
+    // std::cout << "Test Division Successful!" << std::endl;
+
+    return 0;
+}
+
