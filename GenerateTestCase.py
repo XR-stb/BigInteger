@@ -23,6 +23,14 @@ def add_big_numbers(num1, num2):
 def sub_big_numbers(num1, num2):
     return str(int(num1) - int(num2))
 
+# 大数相乘
+def mul_big_numbers(num1, num2):
+    return str(int(num1) * int(num2))
+
+# 大数相除
+def div_big_numbers(num1, num2):
+    return str(int(num1) // int(num2))
+
 def genAddCase(n):
     for i in range(n):
         # 生成随机的数字子字符串和符号，并计算它们的和
@@ -45,5 +53,30 @@ def genSubCase(n):
         print(f"num2 = \"{num2}\";")
         print(f"assert(num1 - num2 == \"{result}\");\n")
 
+def genMulCase(n):
+    for i in range(n):
+        # 生成随机的数字子字符串和符号，并计算它们的乘积
+        num1 = generate_random_number()
+        num2 = generate_random_number()
+        result = mul_big_numbers(num1, num2)
+
+        print(f"num1 = \"{num1}\";")
+        print(f"num2 = \"{num2}\";")
+        print(f"assert(num1 * num2 == \"{result}\");\n")
+
+def genDivCase(n):
+    for i in range(n):
+        # 生成随机的数字子字符串和符号，并计算它们的商
+        num1 = generate_random_number()
+        num2 = generate_random_number()
+        result = div_big_numbers(num1, num2)
+
+        print(f"num1 = \"{num1}\";")
+        print(f"num2 = \"{num2}\";")
+        print(f"assert(num1 // num2 == \"{result}\");\n")
+
+
 #genAddCase(10)
 genSubCase(10)
+# genMulCase(10)
+# genDivCase(10)
