@@ -38,7 +38,8 @@ public:
 
     BigInteger& operator=(const std::string& str) {
         BigInteger result(str);
-        return result;
+        *this = result;
+        return *this;
     }
 
     BigInteger& operator=(const char * str) {
@@ -48,7 +49,7 @@ public:
         return *this;
     }
 
-    BigInteger& operator=(BigInteger &other) {
+    BigInteger& operator=(const BigInteger &other) {
         this->isNegative = other.isNegative;
         this->value = other.value;
         return *this;
@@ -232,7 +233,40 @@ public:
         return BigInteger(isNeg, result);
     }
 
+    BigInteger operator*(const BigInteger& other) const {
+        //相乘后的运算符是一个同或的结果
+        bool isNeg = this->isNegative != other.isNegative;
 
+        std::string num1 = this->value;
+        std::string num2 = other.value;
+        // 获取两个数字的长度
+        int len1 = num1.size();
+        int len2 = num2.size();
+
+        // 创建一个结果字符串，初始全为0
+        std::string result(len1 + len2, '0');
+
+        // 从右往左逐位相乘
+        for (int i = len1 - 1; i >= 0; i--) {
+            int carry = 0;
+            for (int j = len2 - 1; j >= 0; j--) {
+                int product = (num1[i] - '0') * (num2[j] - '0') + (result[i + j + 1] - '0') + carry;
+                carry = product / 10;
+                result[i + j + 1] = '0' + (product % 10);
+            }
+            result[i] += carry;
+        }
+
+        // 移除结果字符串前面多余的0
+        result.erase(0, result.find_first_not_of('0'));
+
+        // 如果结果字符串为空，说明乘积为0
+        if (result.empty()) {
+            return BigInteger("0");
+        }
+
+        return BigInteger(isNeg, result);
+    }
 
 
     friend std::ostream& operator<<(std::ostream& os, const BigInteger& obj) {
@@ -245,16 +279,14 @@ public:
 
 };
 
+const int TestCOUNT = 10;
 
-const int TestCOUNT = 1000;
-
-
-void runAdditionTests() {
-    std::cout << "***********************Running Addition Tests***********************" << std::endl;
+void randomTest(const std::string& operation, int min= -10000, int max = 10000) {
+    std::cout << "***********************Running " << operation << " Tests***********************" << std::endl;
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
+    std::uniform_int_distribution<int> dist(min, max);
 
     for (int i = 0; i < TestCOUNT; ++i) {
         int num1 = dist(gen);
@@ -262,15 +294,33 @@ void runAdditionTests() {
 
         BigInteger a(std::to_string(num1));
         BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 + num2));
+        BigInteger expected;
+        BigInteger result;
 
-        BigInteger result = a + b;
-        std::cout << "Test " << (num1 ) << " + " << num2 
-                  << " " << result << " == " << (num1+num2) << std::endl;
+        if (operation == "+") {
+            expected = BigInteger(std::to_string(num1 + num2));
+            result = a + b;
+        } else if (operation == "-") {
+            expected = BigInteger(std::to_string(num1 - num2));
+            result = a - b;
+        } else if (operation == "*") {
+            expected = BigInteger(std::to_string(num1 * num2));
+            result = a * b;
+        } else if (operation == "/") {
+            // expected = BigInteger(std::to_string(num1 / num2));
+            // result = a / b;
+        }
+
+        std::cout << "Test " << num1 << " " << operation << " " << num2
+                  << " " << result << " == " << expected << std::endl;
         assert(result == expected);
 
         std::cout << "Test " << (i + 1) << " passed" << std::endl;
     }
+}
+
+void runAdditionTests() {
+    randomTest("+");
 
     BigInteger num1, num2;
     num1 = "964793941351798875130890128898086485681241334814868066116469822595";
@@ -321,27 +371,7 @@ void runAdditionTests() {
 }
 
 void runSubtractionTests() {
-    std::cout << "***********************Running Subtraction Tests***********************" << std::endl;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
-
-    for (int i = 0; i < TestCOUNT; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
-
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 - num2));
-
-        BigInteger result = a - b;
-        std::cout << "Test " << (num1 ) << " - " << num2 
-                  << " " << result << " == " << (num1-num2) << std::endl;
-        assert(result == expected);
-
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    randomTest("-");
 
     BigInteger num1, num2;
 
@@ -389,32 +419,70 @@ void runSubtractionTests() {
     std::cout << "***********************Test Subtraction Successful!***********************" << std::endl;
 }
 
-/*
+
 void runMultiplicationTests() {
-    std::cout << "Running Multiplication Tests" << std::endl;
+    randomTest("*");
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-1000, 1000);
+    BigInteger num1, num2;
 
-    for (int i = 0; i < 20; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
+    num1 = "0";
+    num2 = "1234567";
+    assert(num1 * num2 == "0");
 
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 * num2));
+    num1 = "1234567";
+    num2 = "0";
+    assert(num1 * num2 == "0");
 
-        BigInteger result = a * b;
+    num1 = "0";
+    num2 = "-1234567";
+    assert(num1 * num2 == "0");
 
-        assert(result == expected);
+    num1 = "-1234567";
+    num2 = "0";
+    assert(num1 * num2 == "0");
 
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    num1 = "978589317935403580524741174006";
+    num2 = "-90509077484724206257019681411625431895685544824051050469665209069711802436024518652";
+    assert(num1 * num2 == "-88571216402738854083626273911168938903957813772995872304578859791453281026294738966838506705211410784851524559912");
 
-    std::cout << "Multiplication Tests Completed" << std::endl;
+    num1 = "-73071485952769591912309438439999474011325061530286013582323466";
+    num2 = "121317184954072601754213";
+    assert(num1 * num2 == "-8864826976201066608635868352543931222793459676245158085581760956590025991919994262258");
+
+    num1 = "60804275239255660091407521140471330257740738985236447470529001738773972617036767931574009404";
+    num2 = "698373";
+    assert(num1 * num2 == "42464064111664693105016544761434384326089173107336533529335750531312795578477818730677135669499692");
+
+    num1 = "-39145567455071476420441778577455981197905856232846263299378522675706306604909891590083502905";
+    num2 = "9914996271547053655901905643312309824769165645878654098655256517";
+    assert(num1 * num2 == "-388128155364627374535796170428524388793701479708777343194586491343756747866924313930482748539840657691497658103128699160268069983013655376838862542689681885");
+
+    num1 = "89365465149240356961050629455";
+    num2 = "-31325287012035009142033311801148622811245857555859573188474284711326963870071447";
+    assert(num1 * num2 == "-2799398844763966203840525804194721925146808772135370562605512739246192876821780437648117091361338975172671385");
+
+    num1 = "5269690501652";
+    num2 = "68860622";
+    assert(num1 * num2 == "362874165691248747544");
+
+    num1 = "-9038654635725550761920";
+    num2 = "952145506193893843716638573378750544974339628663581697525517372372718328177003144066006834693247";
+    assert(num1 * num2 == "-8606114393444689696685044625449835745337305127328008910465897200565497572693742709752158658141122585433457850328754240");
+
+    num1 = "283";
+    num2 = "-780255";
+    assert(num1 * num2 == "-220812165");
+
+    num1 = "8830048976534505543863302735441876679967664";
+    num2 = "-126719111539546392836988099128";
+    assert(num1 * num2 == "-1118935961157133477206060265931263209228052561225694825363414687866596992");
+
+    num1 = "-043404966031021468501077010162774131316915743553182850020639910857056210836268107";
+    num2 = "-34210694718998487258508014329846922904959283934028057206414099";
+    assert(num1 * num2 == "1484914042175774882132346762639900872820735303932911221194455290535464777327314166521134838110758802767085513534606456668701664400416828840593");
+    std::cout << "***********************Test Multiplication Successful!***********************" << std::endl;
 }
-
+/*
 void runDivisionTests() {
     std::cout << "Running Division Tests" << std::endl;
 
@@ -447,13 +515,13 @@ void runDivisionTests() {
 
 */
 
+
 int main() {
     runAdditionTests();
 
     runSubtractionTests();
 
-    // runMultiplicationTests();
-    // std::cout << "Test Multiplication Successful!" << std::endl;
+    runMultiplicationTests();
 
     // runDivisionTests();
     // std::cout << "Test Division Successful!" << std::endl;
