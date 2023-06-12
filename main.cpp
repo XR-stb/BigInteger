@@ -29,6 +29,12 @@ public:
         if (value[0] == '-') {
             value = value.substr(1);
             isNegative = true;
+        }else {
+            int zero = 0;
+            for(int i = 0; i < str.size(); i++) {
+                if(str[i] == '0') zero ++;
+            }
+            if(zero == str.size()) value = "0";
         }
     }
 
@@ -78,9 +84,9 @@ public:
 
         bool isSmaller = false;
 
-        if (value.length() < other.value.length()) {
+        if (value.size() < other.value.size()) {
             isSmaller = true;
-        } else if (value.length() == other.value.length()) {
+        } else if (value.size() == other.value.size()) {
             isSmaller = value < other.value;// 小心字符串比较
         }
 
@@ -199,8 +205,8 @@ public:
 
         std::string result;
         int borrow = 0;
-        int i = a.value.length() - 1;
-        int j = b.value.length() - 1;
+        int i = a.value.size() - 1;
+        int j = b.value.size() - 1;
 
         while (i >= 0 || j >= 0) {
             int diff = borrow;
@@ -225,7 +231,7 @@ public:
         
         // 去除结果中的前导零,这里的值还是逆序的
         // 单独的值0 不用去
-        while (result.length() > 1 && result.back() == '0') {
+        while (result.size() > 1 && result.back() == '0') {
             result.pop_back();
         }
         std::reverse(result.begin(), result.end());
@@ -268,6 +274,67 @@ public:
         return BigInteger(isNeg, result);
     }
 
+    BigInteger operator/(const BigInteger& other) const {
+        // cout << "--------begin-------\n";
+        if(value.size() < other.value.size()) return BigInteger("0");
+
+        //相除后的运算符是一个同或的结果
+        bool isNeg = this->isNegative != other.isNegative;
+        BigInteger A = BigInteger(false, *this), B = BigInteger(false, other);
+        int len = B.value.size();
+        //这里使用的算法为：取等长前缀做减法，直到A 小于 B
+        std::string result;
+        while(A >= B) {
+            int TempLen = len;
+            BigInteger tmpA = BigInteger(A.value.substr(0, TempLen));
+            if(tmpA < B){
+                while(TempLen < A.value.size()) TempLen++;
+                
+                tmpA = BigInteger(A.value.substr(0, TempLen));
+                if(tmpA < B) break;
+            }
+            //cout << A << " " << tmpA << std::endl;
+            int cnt = 0;
+            while(tmpA >= B){
+                tmpA = tmpA - B;
+                // cout << "tmpA is " << tmpA << std::endl;
+                cnt++;
+            }
+            result += std::to_string(cnt);
+            // cout << "check: " <<  A.value.substr(TempLen) << endl;
+            // if(tmpA == "0") tmpA = "1";
+            A.value = tmpA.value + A.value.substr(TempLen);
+            // cout << "new A is " << A << std::endl;
+            //if(A < B) result += "0";
+        }
+        if(result == "") result += "0";
+        else {
+            BigInteger TmpA(result);
+            
+            //todo: Test 1002 / -555 -10 == -1
+            while((TmpA * B).value.size() < this->value.size()) {
+                result += "0";
+                TmpA = result;
+                //cout << TmpA << "----" << endl;
+                if(TmpA > *this){
+                    //cout << "TempA is:" << TmpA << "  A is : " << A << endl;
+                    result.pop_back();
+                    TmpA = result;
+                    break;
+                }
+                // cout << (TmpA) << "---###---------" << *this << std::endl;
+            }
+        }
+        // cout << isNeg << " " << result << std::endl;
+        BigInteger tmp = BigInteger(isNeg, result);
+        if(tmp == "-0") tmp.isNegative = false;
+        //cout << std::boolalpha << tmp.isNegative << "-----\n";
+        
+        // cout << tmp << std::endl;
+        // cout << std::boolalpha << (tmp == "-10") << std::endl;
+        //cout << "--------end-------\n";
+        return tmp;  
+    }
 
     friend std::ostream& operator<<(std::ostream& os, const BigInteger& obj) {
         if (obj.isNegative) {
@@ -307,8 +374,8 @@ void randomTest(const std::string& operation, int min= -10000, int max = 10000) 
             expected = BigInteger(std::to_string(num1 * num2));
             result = a * b;
         } else if (operation == "/") {
-            // expected = BigInteger(std::to_string(num1 / num2));
-            // result = a / b;
+            expected = BigInteger(std::to_string(num1 / num2));
+            result = a / b;
         }
 
         std::cout << "Test " << num1 << " " << operation << " " << num2
@@ -482,38 +549,60 @@ void runMultiplicationTests() {
     assert(num1 * num2 == "1484914042175774882132346762639900872820735303932911221194455290535464777327314166521134838110758802767085513534606456668701664400416828840593");
     std::cout << "***********************Test Multiplication Successful!***********************" << std::endl;
 }
-/*
+
 void runDivisionTests() {
-    std::cout << "Running Division Tests" << std::endl;
+    randomTest("/");
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
+    BigInteger num1, num2;
 
-    for (int i = 0; i < 20; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
 
-        // Ensure num2 is not zero
-        while (num2 == 0) {
-            num2 = dist(gen);
-        }
+    num1 = "1000";
+    num2 = "10";
+    assert(num1 / num2 == "100");
 
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 / num2));
+    num1 = "5897";
+    num2 = "-551";
+    assert(num1 / num2 == "-10");
+    
+    num1 = "0";
+    num2 = "-378789";
+    assert(num1 / num2 == "0");
 
-        BigInteger result = a / b;
+    num1 = "2249";
+    num2 = "-36";
+    assert(num1 / num2 == "-62");
 
-        assert(result == expected);
+    num1 = "8870";
+    num2 = "577";
+    assert(num1 / num2 == "15");
 
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    num1 = "3765815919";
+    num2 = "-3062162";
+    assert(num1 / num2 == "-1229");
 
-    std::cout << "Division Tests Completed" << std::endl;
+    num1 = "-2693";
+    num2 = "22";
+    assert(num1 / num2 == "-122");
+
+    num1 = "-1";
+    num2 = "-595833026";
+    assert(num1 / num2 == "0"); 
+
+    num1 = "10784";
+    num2 = "-4335287";
+    assert(num1 / num2 == "0");
+
+    num1 = "553069";
+    num2 = "-93414309";
+    assert(num1 / num2 == "0");
+
+    num1 = "602273537";
+    num2 = "-51";
+    assert(num1 / num2 == "-11809285");
+
+    std::cout << "***********************Test Division Successful!***********************" << std::endl;
 }
 
-*/
 
 
 int main() {
@@ -523,8 +612,7 @@ int main() {
 
     runMultiplicationTests();
 
-    // runDivisionTests();
-    // std::cout << "Test Division Successful!" << std::endl;
+    runDivisionTests();
 
     return 0;
 }
