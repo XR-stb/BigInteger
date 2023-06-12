@@ -275,7 +275,6 @@ public:
     }
 
     BigInteger operator/(const BigInteger& other) const {
-        // cout << "--------begin-------\n";
         if(value.size() < other.value.size()) return BigInteger("0");
 
         //相除后的运算符是一个同或的结果
@@ -293,46 +292,30 @@ public:
                 tmpA = BigInteger(A.value.substr(0, TempLen));
                 if(tmpA < B) break;
             }
-            //cout << A << " " << tmpA << std::endl;
             int cnt = 0;
             while(tmpA >= B){
                 tmpA = tmpA - B;
-                // cout << "tmpA is " << tmpA << std::endl;
                 cnt++;
             }
             result += std::to_string(cnt);
-            // cout << "check: " <<  A.value.substr(TempLen) << endl;
-            // if(tmpA == "0") tmpA = "1";
             A.value = tmpA.value + A.value.substr(TempLen);
-            // cout << "new A is " << A << std::endl;
-            //if(A < B) result += "0";
         }
         if(result == "") result += "0";
         else {
             BigInteger TmpA(result);
             
-            //todo: Test 1002 / -555 -10 == -1
             while((TmpA * B).value.size() < this->value.size()) {
                 result += "0";
                 TmpA = result;
-                //cout << TmpA << "----" << endl;
                 if(TmpA > *this){
-                    //cout << "TempA is:" << TmpA << "  A is : " << A << endl;
                     result.pop_back();
                     TmpA = result;
                     break;
                 }
-                // cout << (TmpA) << "---###---------" << *this << std::endl;
             }
         }
-        // cout << isNeg << " " << result << std::endl;
         BigInteger tmp = BigInteger(isNeg, result);
         if(tmp == "-0") tmp.isNegative = false;
-        //cout << std::boolalpha << tmp.isNegative << "-----\n";
-        
-        // cout << tmp << std::endl;
-        // cout << std::boolalpha << (tmp == "-10") << std::endl;
-        //cout << "--------end-------\n";
         return tmp;  
     }
 
