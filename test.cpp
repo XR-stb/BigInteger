@@ -32,8 +32,8 @@ void randomTest(const std::string& operation, int min= -10000, int max = 10000) 
             expected = BigInteger(std::to_string(num1 * num2));
             result = a * b;
         } else if (operation == "/") {
-            // expected = BigInteger(std::to_string(num1 / num2));
-            // result = a / b;
+            expected = BigInteger(std::to_string(num1 / num2));
+            result = a / b;
         }
 
         std::cout << "Test " << num1 << " " << operation << " " << num2
@@ -207,38 +207,59 @@ void runMultiplicationTests() {
     assert(num1 * num2 == "1484914042175774882132346762639900872820735303932911221194455290535464777327314166521134838110758802767085513534606456668701664400416828840593");
     std::cout << "***********************Test Multiplication Successful!***********************" << std::endl;
 }
-/*
+
 void runDivisionTests() {
-    std::cout << "Running Division Tests" << std::endl;
+    randomTest("/");
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(-10000, 10000);
+    BigInteger num1, num2;
 
-    for (int i = 0; i < 20; ++i) {
-        int num1 = dist(gen);
-        int num2 = dist(gen);
 
-        // Ensure num2 is not zero
-        while (num2 == 0) {
-            num2 = dist(gen);
-        }
+    num1 = "1000";
+    num2 = "10";
+    assert(num1 / num2 == "100");
 
-        BigInteger a(std::to_string(num1));
-        BigInteger b(std::to_string(num2));
-        BigInteger expected(std::to_string(num1 / num2));
+    num1 = "5897";
+    num2 = "-551";
+    assert(num1 / num2 == "-10");
+    
+    num1 = "0";
+    num2 = "-378789";
+    assert(num1 / num2 == "0");
 
-        BigInteger result = a / b;
+    num1 = "2249";
+    num2 = "-36";
+    assert(num1 / num2 == "-62");
 
-        assert(result == expected);
+    num1 = "8870";
+    num2 = "577";
+    assert(num1 / num2 == "15");
 
-        std::cout << "Test " << (i + 1) << " passed" << std::endl;
-    }
+    num1 = "3765815919";
+    num2 = "-3062162";
+    assert(num1 / num2 == "-1229");
 
-    std::cout << "Division Tests Completed" << std::endl;
+    num1 = "-2693";
+    num2 = "22";
+    assert(num1 / num2 == "-122");
+
+    num1 = "-1";
+    num2 = "-595833026";
+    assert(num1 / num2 == "0"); 
+
+    num1 = "10784";
+    num2 = "-4335287";
+    assert(num1 / num2 == "0");
+
+    num1 = "553069";
+    num2 = "-93414309";
+    assert(num1 / num2 == "0");
+
+    num1 = "602273537";
+    num2 = "-51";
+    assert(num1 / num2 == "-11809285");
+
+    std::cout << "***********************Test Division Successful!***********************" << std::endl;
 }
-
-*/
 
 
 int main() {
@@ -248,8 +269,7 @@ int main() {
 
     runMultiplicationTests();
 
-    // runDivisionTests();
-    // std::cout << "Test Division Successful!" << std::endl;
+    runDivisionTests();
 
     return 0;
 }
